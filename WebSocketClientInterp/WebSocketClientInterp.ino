@@ -51,14 +51,16 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 			break;
 		case WStype_TEXT:
 			USE_SERIAL.printf("[WSc] get text: %s\n", payload);
-
+      USE_SERIAL.printf("Receiving Text");
 			// send message to server
 			// webSocket.sendTXT("message here");
 			break;
 		case WStype_BIN:
 			USE_SERIAL.printf("[WSc] get binary length: %u\n", length);
+      USE_SERIAL.printf("Receiving Binary");     
 			//hexdump(payload, length);
-
+      USE_SERIAL.printf("%s", payload);
+      
       int k=0;
       int strip[num_pixels][3];
        

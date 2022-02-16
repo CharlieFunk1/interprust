@@ -1,7 +1,7 @@
 use std::net::IpAddr;
 use std::collections::HashMap;
 
-pub const NUM_STRIPS: u8 = 1;
+pub const NUM_STRIPS: u8 = 2;
 
 pub struct Strip {
     pub strip_num: u8,
@@ -32,22 +32,22 @@ pub fn strip_config_data() -> HashMap<IpAddr, Strip> {
     let strip1 = Strip {
 	strip_num: 1,
 	num_pixels: 150,
-	start_pos: (6,300),
-	angle: 0,
-	length: 700,
+	start_pos: (459,375),
+	angle: -90,
+	length: 200,
 	line_color: (255,0,0),
     };
     let stripip1: IpAddr = "192.168.0.159".parse().unwrap(); 
 
     let strip2 = Strip {
 	strip_num: 2,
-	num_pixels: 8,
-	start_pos: (6,400),
+	num_pixels: 150,
+	start_pos: (300,400),
 	angle: 0,
-	length: 700,
+	length: 300,
 	line_color: (0,0,255),
     };
-    let stripip2: IpAddr = "192.168.0.140".parse().unwrap(); 
+    let stripip2: IpAddr = "192.168.0.6".parse().unwrap(); 
     
     let mut strip_config = HashMap::new();
 

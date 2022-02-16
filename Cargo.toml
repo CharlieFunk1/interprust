@@ -11,8 +11,8 @@ edition = "2021"
 [dependencies]
 
 opencv = "0.60"
-tokio-tungstenite = { version = "*", features = ["native-tls"]}
-tokio = { version = "0.3", features = ["full"] }
+tokio-tungstenite = { version = "0.16.1", features = ["native-tls"]}
+tokio = { version = "1.0.0", features = ["full"] }
 futures-channel = "0.3"
 futures-util = "0.3"
 tungstenite = "0.16.0"

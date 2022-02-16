@@ -1,3 +1,4 @@
+use futures_util::stream::SplitSink;
 use opencv::prelude::*;
 mod config;
 use config::config::{strip_config_data, NUM_STRIPS, Strip};
@@ -13,10 +14,10 @@ use opencv::{
     Result,
     videoio,
 };
-use futures_channel::mpsc::{unbounded, UnboundedSender};
+use futures_channel::mpsc::{unbounded, UnboundedSender, UnboundedReceiver};
 use tungstenite::protocol::Message;
-
-
+use tokio::net::{TcpListener, TcpStream};
+use tokio_tungstenite::WebSocketStream;
 
 #[derive(Debug)]
 pub struct Rgbstrip {
@@ -59,17 +60,18 @@ impl Rgbstrip {
 
     //Sends frame to strip's thread
     pub fn send(&self, frame: &Mat) {
-	self.tx.send(self.get_rgb_strip(frame));
+	self.tx.send(self.get_rgb_strip(frame)).unwrap();
     }
 
     //Gets led i's xy coordinates and assigns an RGB value to it based on it's position on the screen
     //and returns an RGB tuple representing that pixel.  
     pub fn get_rgb(&self, frame: &Mat, i: usize) -> (u8, u8, u8) {
-	//println!("Stripxy = {:?}", self.strip_xy);
+	//println!("FRAME = {:?}", frame);
 	let pixel: opencv::core::Vec3b = *frame.at_2d(  
 	    self.strip_xy[i].0 as i32,
 	    self.strip_xy[i].1 as i32
 	).unwrap();
+	//println!("PIXEL: {:?}", pixel);
 	let rgb: (u8, u8, u8) = (*pixel.get(0).unwrap(), *pixel.get(1).unwrap(), *pixel.get(2).unwrap());
 	rgb
     }
@@ -79,9 +81,10 @@ impl Rgbstrip {
 	let mut rgb_strip = Vec::new();
 	let mut i: usize = 0;
 	while i < self.num_pixels as usize {
-	    rgb_strip.push(self.get_rgb(frame, i));
+	    rgb_strip.push(self.get_rgb(&frame, i));
 	    i += 1;
 	}
+	//println!("STRIP: {:?}", rgb_strip);
 	rgb_strip
     }
     
@@ -134,8 +137,20 @@ impl RgbstripSender {
 	}
     }
 
-    pub async fn send(&self, payload: Vec<(u8 ,u8 ,u8)>) {
-	self.sender.unbounded_send(payload).unwrap();
+    pub fn send(&self, payload: Vec<(u8 ,u8 ,u8)>, ws_sender: SplitSink<WebSocketStream<TcpStream>, Message>) {
+	println!("heelo frum sand");
+	// println!("Payload {:?}", payload);
+	//let mut bin_payload = Vec::new();
+	//for element in payload {
+	//    bin_payload.push(element.0);
+	//    bin_payload.push(element.1);
+	//    bin_payload.push(element.2);
+	//}
+	//let binary_msg = Message::binary(bin_payload);
+	//println!("{:?}", payload);
+
+	// TODO: this is the wrong sender.  Use the stream
+	//ws_sender.send(payload).unwrap();
     }
 }
 
