@@ -32,7 +32,7 @@ pub fn strip_config_data() -> HashMap<IpAddr, Strip> {
     let strip1 = Strip {
 	strip_num: 1,
 	num_pixels: 150,
-	start_pos: (459,375),
+	start_pos: (500,250),
 	angle: -90,
 	length: 200,
 	line_color: (255,0,0),
