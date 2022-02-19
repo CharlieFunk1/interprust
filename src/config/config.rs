@@ -1,7 +1,7 @@
 use std::net::IpAddr;
 use std::collections::HashMap;
 
-pub const NUM_STRIPS: u8 = 2;
+pub const NUM_STRIPS: usize = 3;
 
 pub struct Strip {
     pub strip_num: u8,
@@ -14,7 +14,7 @@ pub struct Strip {
 
 //Function to create a vector with the structs containing each strip's data
 //to pass to main.rs in order to generate strip maps
-pub fn strip_config_data() -> HashMap<IpAddr, Strip> {
+pub fn strip_config_data() -> (HashMap<IpAddr, Strip>, Vec<IpAddr>) {
    
 //Create a struct for each strip in array here and input strip's data.
 //Format:
@@ -32,28 +32,43 @@ pub fn strip_config_data() -> HashMap<IpAddr, Strip> {
     let strip1 = Strip {
 	strip_num: 1,
 	num_pixels: 150,
-	start_pos: (500,250),
+	start_pos: (450,6),
 	angle: -90,
 	length: 200,
 	line_color: (255,0,0),
     };
-    let stripip1: IpAddr = "192.168.0.159".parse().unwrap(); 
+    let stripip1: IpAddr = "192.168.1.155".parse().unwrap(); 
 
     let strip2 = Strip {
 	strip_num: 2,
 	num_pixels: 150,
-	start_pos: (300,400),
-	angle: 0,
-	length: 300,
+	start_pos: (400,6),
+	angle: -90,
+	length: 200,
 	line_color: (0,0,255),
     };
-    let stripip2: IpAddr = "192.168.0.6".parse().unwrap(); 
+    let stripip2: IpAddr = "192.168.1.149".parse().unwrap();
+
+    let strip3 = Strip {
+	strip_num: 3,
+	num_pixels: 150,
+	start_pos: (500,6),
+	angle: -90,
+	length: 200,
+	line_color: (0,255,0),
+    };
+    let stripip3: IpAddr = "192.168.1.22".parse().unwrap(); 
     
     let mut strip_config = HashMap::new();
+    let mut ip_list = Vec::new();
 
     strip_config.insert(stripip1, strip1);  //Add each strip struct to list here with a push statement
+    ip_list.push(stripip1);
     strip_config.insert(stripip2, strip2);
+    ip_list.push(stripip2);
+    strip_config.insert(stripip3, strip3);
+    ip_list.push(stripip3);
     
-    return strip_config 
+    return (strip_config, ip_list) 
 }
 

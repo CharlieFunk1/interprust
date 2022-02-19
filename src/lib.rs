@@ -9,6 +9,9 @@ use opencv::{
     highgui,
     videoio,
 };
+use tokio::time::sleep;
+use std::time::{Duration, Instant};
+use std::net::IpAddr;
 
 #[derive(Debug)]
 pub struct Rgbstrip {
@@ -27,11 +30,11 @@ impl Rgbstrip {
     //This is used with a loop to populate the all_led_strips vector in main.rs to create and map the x/y
     //coordinates for all needed led strips.
 
-    pub fn new(tx: mpsc::Sender<Vec<u8>>, sock: SocketAddr) -> Rgbstrip {
+    pub fn new(tx: mpsc::Sender<Vec<u8>>, sock: IpAddr) -> Rgbstrip {
 	
-	let strip_config_data = strip_config_data();
+	let (strip_config_data, _) = strip_config_data();
 	let strip: &Strip;
-	let ip = sock.ip();
+	let ip = sock;
 	strip = strip_config_data.get(&ip).unwrap();
 	
 	Rgbstrip {
@@ -42,7 +45,7 @@ impl Rgbstrip {
 	    length: strip.length,              
 	    strip_xy: vec![strip.start_pos], 
 	    line_color: strip.line_color,
-	    tx: tx, 
+	    tx, 
         }
     }
 
@@ -64,6 +67,8 @@ impl Rgbstrip {
 
     //Returns a vector of rgb values for the strip
     pub fn get_rgb_strip(&self, frame: &Mat) -> Vec<u8> {
+	//let now = Instant::now();
+
 	let mut rgb_strip = Vec::new();
 	let mut i: usize = 0;
 	while i < self.num_pixels as usize {
@@ -72,6 +77,8 @@ impl Rgbstrip {
 	    rgb_strip.push(self.get_rgb(&frame, i).2);   
 	    i += 1;
 	}
+	//println!("get_rgb_strip took {:?} secs",now.elapsed().as_millis());
+
 	rgb_strip
     }
     
@@ -117,14 +124,19 @@ pub fn opencv_setup(video: String) -> (videoio::VideoCapture, String) {
 }
 //Gets next video frame and retuns it
 pub fn opencv_process_frame(cap: &mut videoio::VideoCapture) -> Mat {
+    //let now = Instant::now();
     let mut frame = Mat::default();
     cap.read(&mut frame).expect("Failed to read cap");
+    
+    //println!("opencv_process_frame took {:?} secs",now.elapsed().as_millis());
     frame
     
 }
 //Displays video window and draws strip lines
 pub fn opencv_draw_frame(mut frame: &mut Mat, all_rgb_strips: &Vec<Rgbstrip>, window: &String) {
     //This loop iterates through all led strips and draws the strip lines on the frame
+    //let now = Instant::now();
+
     for strip in all_rgb_strips {
  	strip.draw_strip(&mut frame);
     }
@@ -133,9 +145,11 @@ pub fn opencv_draw_frame(mut frame: &mut Mat, all_rgb_strips: &Vec<Rgbstrip>, wi
 	highgui::imshow(&window, frame).expect("Error in highgui imshow");
     }
     //Delay in showing frames
-    let key = highgui::wait_key(30).expect("failed to let key");
+
+    let key = highgui::wait_key(1).expect("failed to let key");
     if key > 0 && key != 255 {
-	panic!("User exited program");
-	}
+    	panic!("User exited program");
+    	}
+    //println!("opencv_draw_frame took {:?} secs",now.elapsed().as_millis());
 
 }

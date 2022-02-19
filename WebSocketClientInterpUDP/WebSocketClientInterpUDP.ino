@@ -9,6 +9,7 @@
 #include <Adafruit_NeoPixel.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266WiFiMulti.h>
+#include <WiFiUdp.h>
 #include <iostream>
 #include <WebSocketsClient.h>
 #include <SD.h>
@@ -24,6 +25,10 @@ File myFile;
 #define PIN 4
 const int chipSelect = 15;
 int num_pixels = 0;
+unsigned int localUdpPort = 4210;  // local port to listen on
+char incomingPacket[450];  // buffer for incoming packets
+
+WiFiUDP EthernetUdp;
 
 Adafruit_NeoPixel ledstrip = Adafruit_NeoPixel(num_pixels, PIN, NEO_GRB + NEO_KHZ800);
 
@@ -32,78 +37,40 @@ WebSocketsClient webSocket;
 
 #define USE_SERIAL Serial
 
-void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
 
-	switch(type) {
-		case WStype_DISCONNECTED:
-      for (int i = 0; i < num_pixels; i++) {
-                   ledstrip.setPixelColor(i, 0, 0, 0);
-               }
-      ledstrip.show();
-			USE_SERIAL.printf("[WSc] Disconnected!\n");
-			break;
-		case WStype_CONNECTED: {
-			USE_SERIAL.printf("[WSc] Connected to url: %s\n", payload);
-
-			// send message to server when Connected
-			webSocket.sendTXT("Connected");
-		}
-			break;
-		case WStype_TEXT:
-			USE_SERIAL.printf("[WSc] get text: %s\n", payload);
-      USE_SERIAL.printf("Receiving Text");
-			// send message to server
-			// webSocket.sendTXT("message here");
-			break;
-		case WStype_BIN:
-			USE_SERIAL.printf("[WSc] get binary length: %u\n", length);
-      USE_SERIAL.printf("Receiving Binary");     
-			//hexdump(payload, length);
-      USE_SERIAL.printf("%s", payload);
-      
-      int k=0;
-      int strip[num_pixels][3];
-       
-      for (int i = 0; i < num_pixels; i++) {
-          for (int j = 0; j < 3; j++) {
-                  
-              strip[i][j] = payload[k];
-              //Serial.println(k);
-              k++;
-          }
-      //Serial.println("JLOOP");  
-      }
-
-      //FOR TESTING OUTPUT.  DISPLAYS STRIP.
-            //for (int i = 0; i < NUM_PIXELS; i++) {
-            //  for (int j = 0; j < 3; j++) {
-            //    Serial.println(strip[i][j]);
-            //    
-            //}
-            //Serial.println("LED",strip[i]);
-            //}  
-            //Serial.println("STRIP");
-            //FOR TESTING OUTPUT.  DISPLAYS STRIP.
-
-      for (int l = 0; l < (num_pixels); l++) {
-              ledstrip.setPixelColor(l, strip[l][0], strip[l][1], strip[l][2]);
-            }
-            ledstrip.show();
-       
-			// send data to server
-			// webSocket.sendBIN(payload, length);
-			break;
-        //case WStype_PING:
-            // pong will be send automatically
-        //    USE_SERIAL.printf("[WSc] get ping\n");
-        //    break;
-        //case WStype_PONG:
-            // answer to a ping we send
-        //    USE_SERIAL.printf("[WSc] get pong\n");
-        //    break;
+void loop()
+{
+  int packetSize = EthernetUdp.parsePacket();
+  if (packetSize)
+  {
+    // receive incoming UDP packets
+    Serial.printf("Received %d bytes from %s, port %d\n", packetSize, EthernetUdp.remoteIP().toString().c_str(), EthernetUdp.remotePort());
+    int len = EthernetUdp.read(incomingPacket, 450);
+    if (len > 0)
+    {
+      incomingPacket[len] = 0;
     }
+    //Serial.printf("UDP packet contents: %s\n", incomingPacket);
 
+    int k=0;
+    int strip[num_pixels][3];
+       
+    for (int i = 0; i < num_pixels; i++) {
+      for (int j = 0; j < 3; j++) {
+                  
+        strip[i][j] = incomingPacket[k];
+        //Serial.println(k);
+        k++;
+      }
+    }
+    
+    for (int l = 0; l < (num_pixels); l++) {
+      ledstrip.setPixelColor(l, strip[l][0], strip[l][1], strip[l][2]);
+    }
+    ledstrip.show();
+  }
 }
+    
 
 void setup() {
 	// USE_SERIAL.begin(921600);
@@ -176,16 +143,16 @@ void setup() {
   USE_SERIAL.printf("\n");
   
 	// server address, port and URL
-	webSocket.begin(server_ip_.c_str(), 8081, "/");
-
+	EthernetUdp.begin(localUdpPort);
+  Serial.printf("Now listening at IP %s, UDP port %d\n", WiFi.localIP().toString().c_str(), localUdpPort);
 	// event handler
-	webSocket.onEvent(webSocketEvent);
+	
 
 	// use HTTP Basic Authorization this is optional remove if not needed
 	//webSocket.setAuthorization("user", "Password");
 
 	// try ever 5000 again if connection has failed
-	webSocket.setReconnectInterval(5000);
+	
   
   // start heartbeat (optional)
   // ping server every 15000 ms
@@ -196,8 +163,4 @@ void setup() {
   ledstrip.begin();
   ledstrip.show();
 
-}
-
-void loop() {
-	webSocket.loop();
 }
