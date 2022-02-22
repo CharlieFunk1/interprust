@@ -69,6 +69,10 @@ void loop()
     }
     ledstrip.show();
   }
+  for (int i = 0; i < num_pixels; i++) {
+    ledstrip.setPixelColor(i, 0, 0, 0);
+  }
+  ledstrip.show();
 }
     
 

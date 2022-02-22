@@ -10,6 +10,8 @@ pub struct Strip {
     pub angle: i16,
     pub length: u16,
     pub line_color: (u8, u8, u8),
+    pub zig_zags: u8,
+    pub zag_distance: u16,
 }
 
 //Function to create a vector with the structs containing each strip's data
@@ -21,41 +23,49 @@ pub fn strip_config_data() -> (HashMap<IpAddr, Strip>, Vec<IpAddr>) {
 //
 //  let strip1 = Strip1 {
 //      strip_num: 1,                         //This is the strip's number.  Starts at 1,2.....
-//      num_pixels: 150,                      //Number of pixels for this led strip
-//      start_pos: (600,5),                   //Starting position of the strip on screen (first led)
-//      angle: 0,                             //Angle of the led strip (from first led)
-//      length: 700,                          //Length of led strip in screen pixels
-//      line_color: (255,255,255)             //Color of the line drawn on screen for strip
+//      num_pixels: 150,                      //Number of pixels for this led strip.
+//      start_pos: (600,5),                   //Starting position of the strip on screen (first led).
+//      angle: 0,                             //Angle of the led strip (from first led).
+//      length: 700,                          //Length of led strip in screen pixels.
+//      line_color: (255,255,255)             //Color of the line drawn on screen for strip.
+//	zig_zags: 3,                          //Number of zig-zags in the strip. 1 for no zig-zags.
+//	zag_distance: 50,                     //Distance between zags.  Negative values zag in other direction.
 //  };
 //  Const stripip1 IpAddrV4 = IpAddrV4::new(Ipv4Addr::new(192,168,0,149),81);   
     
     let strip1 = Strip {
 	strip_num: 1,
 	num_pixels: 150,
-	start_pos: (450,6),
-	angle: -90,
-	length: 200,
+	start_pos: (500,525),
+	angle: 45,
+	length: 300,
 	line_color: (255,0,0),
+	zig_zags: 3,
+	zag_distance: 50,
     };
     let stripip1: IpAddr = "192.168.1.155".parse().unwrap(); 
 
     let strip2 = Strip {
 	strip_num: 2,
 	num_pixels: 150,
-	start_pos: (400,6),
-	angle: -90,
-	length: 200,
+	start_pos: (300,225),
+	angle: 45,
+	length: 300,
 	line_color: (0,0,255),
+	zig_zags: 3,
+	zag_distance: 50,
     };
     let stripip2: IpAddr = "192.168.1.149".parse().unwrap();
 
     let strip3 = Strip {
 	strip_num: 3,
 	num_pixels: 150,
-	start_pos: (500,6),
-	angle: -90,
-	length: 200,
+	start_pos: (400,325),
+	angle: 45,
+	length: 300,
 	line_color: (0,255,0),
+	zig_zags: 3,
+	zag_distance: 50,
     };
     let stripip3: IpAddr = "192.168.1.22".parse().unwrap(); 
     
