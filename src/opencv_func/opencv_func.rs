@@ -1,9 +1,10 @@
+// use interprust::Rgbstrip;
+// use super::NUM_STRIPS;
 use opencv::prelude::*;
 use opencv::{
     highgui,
     videoio,
 };
-//use interprust::Rgbstrip;
 
 //Sets up opencv and returns cap
 pub fn opencv_setup(video: String) -> (videoio::VideoCapture, String) {
