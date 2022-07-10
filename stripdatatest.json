@@ -1,0 +1,20 @@
+[
+    {
+        "strip_num": 1,
+        "num_pixels": 1,
+        "start_pos": [
+            300,
+            300
+        ],
+        "angle": 0,
+        "length": 1,
+        "line_color": [
+            255,
+            0,
+            0
+        ],
+        "zig_zags": 1,
+        "zag_distance": 0,
+        "ip": "192.168.1.122"
+    }
+]

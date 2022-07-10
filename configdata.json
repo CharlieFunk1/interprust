@@ -1,0 +1,7 @@
+{
+    "num_strips": 3,
+    "rust_path": "/home/matrix/rust/interprust/",
+    "brightness": 10,
+    "mode": 4,
+    "video_stream_ip": "192.168.1.124"
+}

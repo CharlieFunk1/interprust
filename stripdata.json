@@ -1,0 +1,56 @@
+[
+    {
+        "strip_num": 1,
+        "num_pixels": 150,
+        "start_pos": [
+            300,
+            200
+        ],
+        "angle": 0,
+        "length": 600,
+        "line_color": [
+            255,
+            0,
+            0
+        ],
+        "zig_zags": 5,
+        "zag_distance": 34,
+        "ip": "192.168.1.122"
+    },
+    {
+        "strip_num": 2,
+        "num_pixels": 150,
+        "start_pos": [
+            880,
+            370
+        ],
+        "angle": 180,
+        "length": 600,
+        "line_color": [
+            0,
+            255,
+            0
+        ],
+        "zig_zags": 5,
+        "zag_distance": -34,
+        "ip": "192.168.1.149"
+    },
+    {
+        "strip_num": 3,
+        "num_pixels": 150,
+        "start_pos": [
+            300,
+            540
+        ],
+        "angle": 0,
+        "length": 600,
+        "line_color": [
+            0,
+            0,
+            255
+        ],
+        "zig_zags": 5,
+        "zag_distance": 34,
+        "ip": "192.168.1.140"
+    }
+]

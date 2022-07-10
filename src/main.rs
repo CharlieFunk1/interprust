@@ -1,74 +1,92 @@
-use futures_util::{StreamExt, SinkExt};
-use interprust::{Rgbstrip, opencv_setup, opencv_process_frame, opencv_draw_frame};
-mod config;
-use config::config::NUM_STRIPS;
-use opencv::prelude::*;
+//TODO Make serial connection to microcontroller
+//TODO Refine background subtraction more
+//TODO Create way to have custom led layout (or more options) square?
+//TODO Make it so microcontrollers can reconnect if connection lost and go blank when disconnect
+//TODO make microcontrollers ip address detectable in gui
+
+//TODO Make a config JSON with items from config options
+//TODO make a way to save configs.  Perhaps using JSON saves?
+//TODO Fix framerate of vidio_player output.
+//TODO make it so you can upload video files to server
+
+mod modules;
+
+use modules::rgb::Rgbstrip;
+use modules::opencv_func::opencv_loop;
+use modules::json_rw::{Strip, Config, json_read, json_read_config};
+
 use std::sync::mpsc;
 use tokio;
-use std::env;
-use tokio::net::{TcpListener, TcpStream};
-use tungstenite::protocol::Message;
 use std::net::SocketAddr;
+use tokio::net::UdpSocket;
+use std::net::IpAddr;
 
+    
 #[tokio::main]
 async fn main() {
-    //Run opencv setup to initialize video capture.  Specify video to be played here:
-    let (mut cap, window) = opencv_setup(String::from("/home/charlie/rust/interprust/video/newlong4.mov"));
-    //Set address of the server and listen for incoming connections
-    let addr = env::args().nth(1).unwrap_or_else(|| "192.168.0.188:8081".to_string());
-    let try_socket = TcpListener::bind(&addr).await;
-    let listener = try_socket.expect("Failed to bind");
-    println!("Listening on: {}", addr);
     //Create num_threads variable to use later to know when we have received enough connections
     let mut num_threads = 0;
+
+    //Get config info from json
+    let config = json_read_config();
+    let mode = config.mode;
+    let video_stream_ip = config.video_stream_ip;
+    
     //Create all_rgb_strips vector to hold all of the rgb strips
     let mut all_rgb_strips : Vec<Rgbstrip> = Vec::new();
+
+    //Prepare ip list
+    let strips: Vec<Strip> = json_read();
+    let num_strips = strips.len();
+    let mut iplist = Vec::new();
+    for strip in strips {
+	iplist.push(strip.ip);
+    }
+    
     //This is the loop that creates an thread for each strip and adds ip address and transmitter/reciever
-    while let Ok((stream, ip)) = listener.accept().await{
+    loop {
+	let addr = String::from("192.168.1.112:808") + &num_threads.to_string();
+
+	let ip = iplist[num_threads];
+		
+	//Initialize UDP socket
+	let sock = UdpSocket::bind(addr).await.expect("Failed to bind UDP address");
+		
 	//Create transmitter and reciever to communicate to each strip's thread
 	let (tx, rx) = mpsc::channel();
-	
+		
 	// create rgbstrip, initialize it, and add to vector	
-	let mut rgbstrip = Rgbstrip::new(tx, ip);
-	rgbstrip.set_strip();
-	all_rgb_strips.push(rgbstrip);  
-	
+	let mut rgbstrip = Rgbstrip::new(tx, num_threads);
+	rgbstrip.set_strip_zig_zag();
+	all_rgb_strips.push(rgbstrip);
+		
 	// spawn thread
-	tokio::spawn(manage_connection(rx, stream, ip));
+	tokio::spawn(manage_connection(rx, sock, ip));
 	num_threads += 1;
+		
 	// once we've made enough threads, move along
-	if num_threads >= NUM_STRIPS {
+	if num_threads >= num_strips {
 	    break
 	}
     }
-    //Loop that will run in main thread to process video frames
+    
     loop {
-	//Runs process frame to update with new frame from video
-    	let mut frame: Mat = opencv_process_frame(&mut cap);
-	//Iterates through all rgb strips and sends updated frame
-    	for strip in &all_rgb_strips {
-    	    strip.send(&frame);
-    	}
-	//Calls draw frame to display video window and draw lines
-	opencv_draw_frame(&mut frame, &all_rgb_strips, &window);
-    }
+	opencv_loop(&all_rgb_strips, &mode, &video_stream_ip);
+	}
 }
+
     
 //Code that will be passed to each thread via a RgbstripSender object.
-async fn manage_connection(rx: mpsc::Receiver<Vec<u8>>, stream: TcpStream, ip: SocketAddr){
-    // create stream to microcontroller and perform handshake
-    let ws_stream = tokio_tungstenite::accept_async(stream)
-            .await
-            .expect("Error during the websocket handshake occurred");
-    	println!("WebSocket connection established: {}", ip);
+async fn manage_connection(rx: mpsc::Receiver<[u8; 450]>, sock: UdpSocket, ip: IpAddr){
+    println!("WebSocket connection established: {}", ip);
+    
     //Split stream into sender
-    let (mut ws_sender, _) = ws_stream.split();
     loop {
 	//Receive payload from main	
-	let payload = rx.recv().unwrap();
-	//Convert payload to binary message
-	let mess = Message::Binary(payload);
-	//send message
-	ws_sender.send(mess).await.unwrap();
+	let payload = rx.recv().expect("Failed to recieve payload");
+	let sip = SocketAddr::new(ip, 4210);
+	//println!("{:?}", payload);
+	//Send payload UDP to strip
+	sock.send_to(&payload, sip).await.expect("Failed to send payload to thread");
     }
 }
