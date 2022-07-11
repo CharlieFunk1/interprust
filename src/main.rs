@@ -1,10 +1,12 @@
 //TODO Make serial connection to microcontroller
 //TODO Refine background subtraction more
 //TODO Create way to have custom led layout (or more options) square?
+//--Make a perpendicualr offset and angle offset for each zag.
+//--Maybe a zig zag disable.  So each row starts from the left.
 //TODO Make it so microcontrollers can reconnect if connection lost and go blank when disconnect
 //TODO make microcontrollers ip address detectable in gui
 
-//TODO Make a config JSON with items from config options
+//TODO Replace absolute directories in json_rw.rs
 //TODO make a way to save configs.  Perhaps using JSON saves?
 //TODO Fix framerate of vidio_player output.
 //TODO make it so you can upload video files to server
