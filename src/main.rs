@@ -1,21 +1,19 @@
 //TODO Make serial connection to microcontroller
+
 //TODO Refine background subtraction more
-//TODO Create way to have custom led layout (or more options) square?
-//--Make a perpendicualr offset and angle offset for each zag.
-//--Maybe a zig zag disable.  So each row starts from the left.
 //TODO Make it so microcontrollers can reconnect if connection lost and go blank when disconnect
 //TODO make microcontrollers ip address detectable in gui
 
 //TODO Replace absolute directories in json_rw.rs
-//TODO make a way to save configs.  Perhaps using JSON saves?
 //TODO Fix framerate of vidio_player output.
 //TODO make it so you can upload video files to server
+//TODO Make video stream to running page
 
 mod modules;
 
 use modules::rgb::Rgbstrip;
 use modules::opencv_func::opencv_loop;
-use modules::json_rw::{Strip, Config, json_read, json_read_config};
+use modules::json_rw::{Strip, json_read, json_read_config};
 
 use std::sync::mpsc;
 use tokio;
@@ -33,6 +31,8 @@ async fn main() {
     let config = json_read_config();
     let mode = config.mode;
     let video_stream_ip = config.video_stream_ip;
+    let host_ip = config.host_ip;
+    
     
     //Create all_rgb_strips vector to hold all of the rgb strips
     let mut all_rgb_strips : Vec<Rgbstrip> = Vec::new();
@@ -47,20 +47,22 @@ async fn main() {
     
     //This is the loop that creates an thread for each strip and adds ip address and transmitter/reciever
     loop {
-	let addr = String::from("192.168.1.112:808") + &num_threads.to_string();
-
+	//let addr = String::from("192.168.1.112:808") + &num_threads.to_string();
+	let addr = format!("{}:808{}", host_ip, num_threads );
+	//print!("{}", addr);
 	let ip = iplist[num_threads];
-		
+	//print!("{}",iplist[num_threads]);
 	//Initialize UDP socket
 	let sock = UdpSocket::bind(addr).await.expect("Failed to bind UDP address");
 		
 	//Create transmitter and reciever to communicate to each strip's thread
 	let (tx, rx) = mpsc::channel();
 		
-	// create rgbstrip, initialize it, and add to vector	
-	let mut rgbstrip = Rgbstrip::new(tx, num_threads);
-	rgbstrip.set_strip_zig_zag();
+	// create rgbstrip, initialize it, and add to vector
+	let rgbstrip = Rgbstrip::new(tx, num_threads);
+	//rgbstrip.set_strip_zig_zag();
 	all_rgb_strips.push(rgbstrip);
+	
 		
 	// spawn thread
 	tokio::spawn(manage_connection(rx, sock, ip));
@@ -71,9 +73,9 @@ async fn main() {
 	    break
 	}
     }
-    
+    //Main loop.  Function is in loop because when video is over needs to loop to itself to start next video
     loop {
-	opencv_loop(&all_rgb_strips, &mode, &video_stream_ip);
+	opencv_loop(&mut all_rgb_strips, &mode, &video_stream_ip);
 	}
 }
 
@@ -87,8 +89,9 @@ async fn manage_connection(rx: mpsc::Receiver<[u8; 450]>, sock: UdpSocket, ip: I
 	//Receive payload from main	
 	let payload = rx.recv().expect("Failed to recieve payload");
 	let sip = SocketAddr::new(ip, 4210);
-	//println!("{:?}", payload);
+	println!("{:?}", payload);
 	//Send payload UDP to strip
 	sock.send_to(&payload, sip).await.expect("Failed to send payload to thread");
     }
 }
+

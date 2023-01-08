@@ -9,10 +9,6 @@ use std::path::Path;
 use std::{fs, time, thread};
 
 
-//1 for video  2 for camera
-const MODE:u8 = 1;
-
-
 //Sets up opencv  for videos and returns cap
 pub fn opencv_setup(video: String) -> (videoio::VideoCapture, String) {
     
@@ -65,9 +61,9 @@ pub fn opencv_process_frame(cap: &mut videoio::VideoCapture) -> Mat {
 pub fn opencv_draw_frame(mut frame: &mut Mat, all_rgb_strips: &Vec<Rgbstrip>, window: &String) {
     
     //This loop iterates through all led strips and draws the strip lines on the frame
-    for strip in all_rgb_strips {
+    all_rgb_strips.into_iter().for_each(|strip| {
  	strip.draw_leds(&mut frame);
-    }
+    });
     
     //Show the frame in video window
     if frame.size().expect("Failed to get frame size").width > 0 {
@@ -84,7 +80,8 @@ pub fn opencv_draw_frame(mut frame: &mut Mat, all_rgb_strips: &Vec<Rgbstrip>, wi
 
 
 
-pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &IpAddr) {
+pub fn opencv_loop(all_rgb_strips: &mut Vec<Rgbstrip>, mode: &u8, video_stream_ip: &IpAddr) {
+    
     //Video mode.  Reads from videos in video folder  
     if *mode == 1 {
 	
@@ -112,11 +109,15 @@ pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &
 		
 		//Runs process frame to update with new frame from video
     		let mut frame: Mat = opencv_process_frame(&mut cap);
-		
+
+		//let cloned_tx = all_tx_and_num.clone();
 		//Iterates through all rgb strips and sends updated frame
-    		for strip in all_rgb_strips {
+		let mut i = 1;
+    		all_rgb_strips.into_iter().for_each(|strip| {
+		    strip.update_config(i);
     		    strip.send(&frame);
-    		}
+		    i += 1;
+    		});
 	    
 		//Calls draw frame to display video window and draw lines
 		opencv_draw_frame(&mut frame, &all_rgb_strips, &window);
@@ -150,7 +151,7 @@ pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &
 	loop {
 	    
 	    //Runs process frame to update with new frame from vide0
-    	    let mut frame: Mat = opencv_process_frame(&mut cap);
+    	    let frame: Mat = opencv_process_frame(&mut cap);
 
 	    //Convert to greyscale
 	    opencv::imgproc::cvt_color(&frame, &mut gray, COLOR_BGR2GRAY, 3).expect("Failed to make image gray");
@@ -163,11 +164,15 @@ pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &
 
 	    //Convert to 3 channel image
 	    opencv::imgproc::cvt_color(&fg_mask, &mut gray3c, COLOR_GRAY2RGB, 3).expect("Failed to make image gray");
-	    
+
 	    //Iterates through all rgb strips and sends updated frame
-    	    for strip in all_rgb_strips {
+	    let mut i = 1;
+    	    all_rgb_strips.into_iter().for_each(|strip| {
+		strip.update_config(i);
     		strip.send(&gray3c);
-    	    }
+		i += 1;
+    	    });
+
 	    //Calls draw frame to display video window and draw lines
 	    opencv_draw_frame(&mut gray3c, &all_rgb_strips, &window);
  	    
@@ -183,9 +188,7 @@ pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &
 	//Declare vars
 	let mut diff_frame = Mat::default();
 	let mut thresh = Mat::default();
-	let mut frame = Mat::default();
 	let mut dilated = Mat::default();
-	let mut ref_frame = Mat::default();
 	let mut gray = Mat::default();
 	let mut gray3c = Mat::default();
    
@@ -197,14 +200,13 @@ pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &
 	let size = opencv::core::Size2i::from_point(struc_point);
 
 	//Prepare reference image
-    	let mut ref_frame: Mat = opencv_process_frame(&mut cap);
 	opencv::highgui::wait_key(1000).unwrap();
-    	let mut ref_frame: Mat = opencv_process_frame(&mut cap);
+    	let ref_frame: Mat = opencv_process_frame(&mut cap);
 
 	//Run loop
 	loop {
 	    //Read frame
-    	    let mut frame: Mat = opencv_process_frame(&mut cap);
+    	    let frame: Mat = opencv_process_frame(&mut cap);
 	    
 	    //Apply absdiff.
 	    opencv::core::absdiff(&ref_frame,
@@ -221,13 +223,13 @@ pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &
 					   size,
 					   5.0,
 					   5.0,
-					   0);
+					   0).unwrap();
 	    //Apply threshold mask
 	    opencv::imgproc::threshold(&dilated,
 				       &mut thresh,
 				       10.0,
 				       255.0,
-				       opencv::imgproc::THRESH_BINARY);
+				       opencv::imgproc::THRESH_BINARY).unwrap();
 	    
 	    //Make greyscale 3 channel
 	    opencv::imgproc::cvt_color(&thresh,
@@ -235,13 +237,15 @@ pub fn opencv_loop(all_rgb_strips: &Vec<Rgbstrip>, mode: &u8, video_stream_ip: &
 	    			       opencv::imgproc::COLOR_GRAY2RGB,
 	    			       3).unwrap();
 
-
-	    //Sends info to strips
-	    for strip in all_rgb_strips {
+	    //Iterates through all rgb strips and sends updated frame
+    	    let mut i = 1;
+    	    all_rgb_strips.into_iter().for_each(|strip| {
+		strip.update_config(i);
     		strip.send(&gray3c);
-    	    }
+		i += 1;
+    	    });
 
-	     //Calls draw frame to display video window and draw lines
+	    //Calls draw frame to display video window and draw lines
 	    opencv_draw_frame(&mut gray3c, &all_rgb_strips, &window);
  	    
 	    //Time delay between frames
@@ -255,26 +259,27 @@ if *mode == 4 {
 	let (mut cap, window) = opencv_setup_ip(*video_stream_ip);
 
 	//Declare vars
-        let mut frame = Mat::default();
         let mut frame3 = Mat::default();
    
 	//Run loop
 	loop {
 	    //Read frame
-    	    let mut frame: Mat = opencv_process_frame(&mut cap);
+    	    let frame: Mat = opencv_process_frame(&mut cap);
 	    //println!("{:?}", frame);
 	    opencv::imgproc::cvt_color(&frame,
 	    			       &mut frame3,
 	    			       opencv::imgproc::COLOR_BGR2BGRA,
 	    			       3).unwrap();
 
-	    
-	    //Sends info to strips
-	    for strip in all_rgb_strips {
+	    //Iterates through all rgb strips and sends updated frame
+	    let mut i = 1;
+    	    all_rgb_strips.into_iter().for_each(|strip| {
+		strip.update_config(i);
     		strip.send(&frame3);
-    	    }
+		i += 1;
+    	    });
 
-	     //Calls draw frame to display video window and draw lines
+	    //Calls draw frame to display video window and draw lines
 	    opencv_draw_frame(&mut frame3, &all_rgb_strips, &window);
  	    
 	    //Time delay between frames
@@ -284,3 +289,4 @@ if *mode == 4 {
     };
 
 }
+

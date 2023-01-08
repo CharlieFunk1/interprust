@@ -1,5 +1,5 @@
 use std::net::IpAddr;
-use std::{fs,env};
+use std::fs;
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -21,6 +21,7 @@ pub struct Config {
     pub rust_path: String,
     pub brightness: u8,
     pub mode: u8,
+    pub host_ip: IpAddr,
     pub video_stream_ip: IpAddr
     
 }
@@ -40,7 +41,15 @@ pub fn json_read_config() -> Config {
     let config: Config = serde_json::from_str(&data).unwrap();
     
     config
-} 
+}
+
+pub fn json_read_strip_xy() -> Vec<Vec<(u16, u16)>> {
+    let path = "/home/matrix/rust/interprust/strips-xy.json";
+    let data = fs::read_to_string(path).unwrap();
+    let strips_xy: Vec<Vec<(u16, u16)>> = serde_json::from_str(&data).unwrap();
+
+    strips_xy
+}
 //pub fn json_write(strips: &Vec<Strip>) {
 //    let path = "./stripdata.json";
 //    let serialized_strip = serde_json::to_string(&strips).unwrap();
