@@ -4,5 +4,5 @@
     "brightness": 100,
     "mode": 1,
     "video_stream_ip": "0.0.0.0",
-    "host_ip": "192.168.4.79"
+    "host_ip": "192.168.1.112"
 }

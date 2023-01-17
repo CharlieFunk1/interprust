@@ -84,12 +84,11 @@ async fn main() {
 async fn manage_connection(rx: mpsc::Receiver<[u8; 450]>, sock: UdpSocket, ip: IpAddr){
     println!("WebSocket connection established: {}", ip);
     
-    //Split stream into sender
     loop {
 	//Receive payload from main	
 	let payload = rx.recv().expect("Failed to recieve payload");
 	let sip = SocketAddr::new(ip, 4210);
-	println!("{:?}", payload);
+	//println!("{:?}", payload);
 	//Send payload UDP to strip
 	sock.send_to(&payload, sip).await.expect("Failed to send payload to thread");
     }

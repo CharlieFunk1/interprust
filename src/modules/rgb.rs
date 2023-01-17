@@ -5,7 +5,7 @@ use opencv::core::Point;
 use opencv::core::Scalar;
 use std::sync::mpsc;
 
-const packet_size:usize = 450;
+const PACKET_SIZE:usize = 450;
     
 #[derive(Debug, Clone)]
 pub struct Rgbstrip {
@@ -16,7 +16,7 @@ pub struct Rgbstrip {
     pub length: u16,                 //length of led strip in screen pixels
     pub strip_xy: Vec<(u16, u16)>,   //Vector that contains xy mappings for all leds in strip
     pub line_color: [u8; 3],    //Color of the line drawn on screen for strip
-    pub tx: mpsc::Sender<[u8; packet_size]>,            //Transmitter for sending to thread
+    pub tx: mpsc::Sender<[u8; PACKET_SIZE]>,            //Transmitter for sending to thread
     pub zig_zags: u8,                //Number of zig-zags in the strip. 1 for no zig-zags.
     pub zag_distance: i16,           //Distance between zags.  Negative values zag in other direction.
     pub brightness: f32              //Global strip brightness
@@ -27,7 +27,7 @@ impl Rgbstrip {
     //This is used with a loop to populate the all_led_strips vector in main.rs to create and map the x/y
     //coordinates for all needed led strips.
 
-    pub fn new(tx: std::sync::mpsc::Sender<[u8; packet_size]>, num_thread: usize) -> Rgbstrip {
+    pub fn new(tx: std::sync::mpsc::Sender<[u8; PACKET_SIZE]>, num_thread: usize) -> Rgbstrip {
 
 	let strips: Vec<Strip> = json_read();
 	let config: Config = json_read_config();
@@ -69,8 +69,8 @@ impl Rgbstrip {
     
 
     //Returns an array of rgb values for the strip
-    pub fn get_rgb_strip(&self, frame: &Mat) -> [u8; packet_size] {
-	let mut rgb_strip: [u8; packet_size] = [0; packet_size];
+    pub fn get_rgb_strip(&self, frame: &Mat) -> [u8; PACKET_SIZE] {
+	let mut rgb_strip: [u8; PACKET_SIZE] = [0; PACKET_SIZE];
 	let mut i: usize = 0;
 	let mut j: usize = 0;
 	let mut k: usize = 0;
@@ -83,6 +83,7 @@ impl Rgbstrip {
 	    j = 0;
 	    i += 1;
 	}
+	//println!("{:?}", rgb_strip);
 	rgb_strip
     }
    

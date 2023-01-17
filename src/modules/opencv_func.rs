@@ -7,6 +7,7 @@ use opencv::{highgui, videoio};
 use std::net::IpAddr;
 use std::path::Path;
 use std::{fs, time, thread};
+use std::time::Instant;
 
 
 //Sets up opencv  for videos and returns cap
@@ -69,13 +70,6 @@ pub fn opencv_draw_frame(mut frame: &mut Mat, all_rgb_strips: &Vec<Rgbstrip>, wi
     if frame.size().expect("Failed to get frame size").width > 0 {
 	highgui::imshow(&window, frame).expect("Error in highgui imshow");
     }
-    
-    //Delay in showing frames
-    let key = highgui::wait_key(1).expect("failed to let key");
-    if key > 0 && key != 255 {
-    	panic!("User exited program");
-    	}
-
 }
 
 
@@ -106,10 +100,10 @@ pub fn opencv_loop(all_rgb_strips: &mut Vec<Rgbstrip>, mode: &u8, video_stream_i
 	    
 	    //Loops while the current frame is not the last frame
 	    while current_frame < number_frames {
-		
+		let start = Instant::now();
 		//Runs process frame to update with new frame from video
     		let mut frame: Mat = opencv_process_frame(&mut cap);
-
+		//println!("1-{:?}", Instant::now() - start);
 		//let cloned_tx = all_tx_and_num.clone();
 		//Iterates through all rgb strips and sends updated frame
 		let mut i = 1;
@@ -118,12 +112,17 @@ pub fn opencv_loop(all_rgb_strips: &mut Vec<Rgbstrip>, mode: &u8, video_stream_i
     		    strip.send(&frame);
 		    i += 1;
     		});
-	    
+		//println!("2-{:?}", Instant::now() - start);
+		
 		//Calls draw frame to display video window and draw lines
 		opencv_draw_frame(&mut frame, &all_rgb_strips, &window);
-		thread::sleep(time::Duration::from_millis(1));
+		//println!("3-{:?}", Instant::now() - start);
+		thread::sleep(time::Duration::from_millis(10));
+		//println!("4-{:?}", Instant::now() - start);
 	    
 		current_frame += 1.0;
+		let fps = Instant::now() - start;
+		println!("fps={:?}", fps);
 	    }
 	}
     };
